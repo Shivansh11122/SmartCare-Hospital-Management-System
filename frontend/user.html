@@ -1,0 +1,261 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Hospital - User Portal</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #e0f2fe, #eef2ff);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 420px;
+            padding: 32px;
+            background: white;
+            border-radius: 18px;
+            box-shadow: 0 12px 35px #1e293b20;
+        }
+
+        h1 {
+            margin: 0 0 8px;
+            text-align: center;
+            color: #0f766e;
+        }
+
+        .subtitle {
+            margin-bottom: 25px;
+            text-align: center;
+            color: #64748b;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 22px;
+        }
+
+        .tabs button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: #e2e8f0;
+            font-weight: bold;
+        }
+
+        .tabs button.active {
+            color: white;
+            background: #0f766e;
+        }
+
+        label {
+            display: block;
+            margin: 14px 0 6px;
+            font-weight: bold;
+            color: #334155;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 15px;
+        }
+
+        input:focus {
+            outline: 2px solid #99f6e4;
+            border-color: #0f766e;
+        }
+
+        .submit-btn {
+            width: 100%;
+            margin-top: 22px;
+            padding: 13px;
+            border: none;
+            border-radius: 8px;
+            background: #0f766e;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .submit-btn:hover {
+            background: #115e59;
+        }
+
+        #message {
+            margin-top: 16px;
+            text-align: center;
+            font-size: 14px;
+            overflow-wrap: anywhere;
+        }
+
+        .back-link {
+            display: block;
+            margin-top: 20px;
+            text-align: center;
+            color: #475569;
+            text-decoration: none;
+        }
+
+        .back-link:hover {
+            color: #0f766e;
+        }
+
+        [hidden] {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body>
+    <main class="container">
+        <h1>Smart Hospital</h1>
+        <p class="subtitle">Patient Portal</p>
+
+        <div class="tabs">
+            <button type="button" id="loginTab" class="active">
+                Login
+            </button>
+
+            <button type="button" id="signupTab">
+                Sign Up
+            </button>
+        </div>
+
+        <form id="authForm">
+            <label for="name">Name</label>
+            <input
+                type="text"
+                id="name"
+                autocomplete="username"
+                maxlength="100"
+                required
+            >
+
+            <label for="password">Password</label>
+            <input
+                type="password"
+                id="password"
+                autocomplete="current-password"
+                minlength="8"
+                required
+            >
+
+            <button type="submit" class="submit-btn" id="submitBtn">
+                Login
+            </button>
+        </form>
+
+        <p id="message" role="status" aria-live="polite"></p>
+
+        <a href="/user" class="back-link">
+            Back to Patient Portal
+        </a>
+    </main>
+
+    <script>
+        const authForm = document.getElementById("authForm");
+        const loginTab = document.getElementById("loginTab");
+        const signupTab = document.getElementById("signupTab");
+        const nameInput = document.getElementById("name");
+        const passwordInput = document.getElementById("password");
+        const submitBtn = document.getElementById("submitBtn");
+        const message = document.getElementById("message");
+
+        let mode = "login";
+
+        function setMode(newMode) {
+            mode = newMode;
+
+            const signingUp = mode === "signup";
+
+            passwordInput.autocomplete = signingUp
+                ? "new-password"
+                : "current-password";
+
+            passwordInput.value = "";
+            message.textContent = "";
+
+            loginTab.classList.toggle("active", !signingUp);
+            signupTab.classList.toggle("active", signingUp);
+
+            submitBtn.textContent = signingUp
+                ? "Create Account"
+                : "Login";
+        }
+
+        loginTab.addEventListener("click", () => setMode("login"));
+        signupTab.addEventListener("click", () => setMode("signup"));
+
+        authForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+
+            message.textContent = "Please wait...";
+            submitBtn.disabled = true;
+
+            const payload = {
+                name: nameInput.value.trim(),
+                password: passwordInput.value
+            };
+
+            try {
+                const response = await fetch(
+                    mode === "signup" ? "/api/signup" : "/api/login",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify(payload)
+                    }
+                );
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    message.textContent =
+                        result.error || "Something went wrong.";
+                    return;
+                }
+
+                if (mode === "signup") {
+                    message.textContent =
+                        "Account created successfully! Please log in.";
+
+                    authForm.reset();
+                    setMode("login");
+                } else if (result.success) {
+                    window.location.href =
+                   result.role === "admin" ? "/" : "/user/dashboard";
+                } else {
+                    message.textContent = "Login failed.";
+                }
+            } catch (error) {
+                message.textContent =
+                    "Unable to connect to the server. Please try again.";
+            } finally {
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
