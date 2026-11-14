@@ -18,7 +18,7 @@ CREATE TABLE Departments (
 CREATE TABLE Wards (
     ward_id INT AUTO_INCREMENT PRIMARY KEY,
     ward_name VARCHAR(100) NOT NULL,
-    ward_type ENUM('General','Emergency','ICU','OPD') NOT NULL,
+    ward_type ENUM('General','Emergency','ICU') NOT NULL,
     capacity INT NOT NULL,
     available_capacity INT NOT NULL,
     floor_no INT,
